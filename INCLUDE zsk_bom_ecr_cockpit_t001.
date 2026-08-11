@@ -1,0 +1,45 @@
+*&---------------------------------------------------------------------*
+*& Include          ZSK_BOM_ECR_COCKPIT_T001
+*&---------------------------------------------------------------------*
+
+TABLES: mast,stpo,stko.
+**TYPES: BEGIN OF ty_out,
+**         sel       TYPE char1,      " For selection
+**         matnr     TYPE matnr,      " Material number
+**         maktx1    TYPE maktx,      " FG Material Text
+**         werks     TYPE werks_d,    " Plant
+**         stlst     TYPE stlst,      " BOM status
+**         bmeng     TYPE bmeng,      " Base quantity
+**         idnrk     TYPE idnrk,      " Component
+**         maktx     TYPE maktx,      " Material Text
+**         meins     TYPE kmpme,      " UoM
+**         old_menge TYPE menge_d,    " Old quantity (DEC field)
+**         new_menge TYPE menge_d,    " New quantity
+**         aennr     TYPE aennr,      " Change number
+**       END OF ty_out.
+
+TYPES: BEGIN OF ty_out.
+         INCLUDE STRUCTURE zst_bom.
+         TYPES: cell_style TYPE lvc_t_styl,
+       END OF ty_out.
+
+DATA: it_out TYPE TABLE OF ty_out,
+      ls_out TYPE ty_out.
+
+
+
+TYPES: BEGIN OF ty_plant,
+         werks TYPE werks_d,
+       END OF ty_plant.
+
+DATA: lt_plant_list TYPE STANDARD TABLE OF ty_plant.
+TYPES:ty_vt_plant TYPE STANDARD TABLE OF ty_plant WITH EMPTY KEY.
+
+
+DATA: lt_filcat TYPE lvc_t_fcat,
+      wa_fc     TYPE lvc_s_fcat,
+      ls_layout TYPE lvc_s_layo.
+
+*DATA: lt_filcat TYPE slis_t_fieldcat_alv,
+*      wa_fc     TYPE slis_fieldcat_alv,
+*      ls_layout TYPE  slis_layout_alv.

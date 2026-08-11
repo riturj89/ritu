@@ -1,0 +1,88 @@
+*&---------------------------------------------------------------------*
+*& Include          ZSK_BOM_ECR_COCKPIT_S001
+*&---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-003.
+SELECT-OPTIONS: s_matnr FOR mast-matnr  NO INTERVALS,"OBLIGATORY
+                s_werks FOR mast-werks OBLIGATORY NO INTERVALS, "
+                s_idnrk FOR stpo-idnrk NO INTERVALS,
+*                s_andat FOR stko-andat,
+                s_date FOR stpo-datuv OBLIGATORY.
+PARAMETERS: p_labor TYPE stko-labor OBLIGATORY.
+SELECTION-SCREEN END OF BLOCK b1.
+
+SELECTION-SCREEN BEGIN OF LINE.
+SELECTION-SCREEN COMMENT 1(15) TEXT-001.
+PARAMETERS: p_stlal TYPE stlal OBLIGATORY.
+SELECTION-SCREEN COMMENT 20(15) TEXT-002.
+PARAMETERS: p_status TYPE t415s-stlst OBLIGATORY.
+SELECTION-SCREEN END OF LINE.
+
+
+START-OF-SELECTION.
+  IF  s_werks[] IS NOT INITIAL AND p_status IS NOT INITIAL  "s_matnr[] IS NOT INITIAL AND
+    AND p_stlal IS NOT INITIAL AND s_date[] IS NOT INITIAL.
+
+    DATA: lv_flag    TYPE abap_bool,
+          gv_message TYPE string,
+          lv_userid  TYPE char12.
+
+    SORT s_werks BY sign option low high.
+    DELETE ADJACENT DUPLICATES FROM s_werks COMPARING ALL FIELDS.
+
+    SELECT werks FROM t001w INTO TABLE @lt_plant_list WHERE werks IN @s_werks.
+
+    CALL FUNCTION 'MESSAGES_INITIALIZE'.
+
+    LOOP AT lt_plant_list INTO DATA(ls_plant_list).
+      CLEAR: lv_flag, gv_message,lv_userid.
+
+      PERFORM user_status_validation USING p_status sy-uname ls_plant_list-werks CHANGING lv_flag gv_message lv_userid.
+
+      IF  lv_flag = abap_true.
+
+        CALL FUNCTION 'MESSAGE_STORE'
+          EXPORTING
+            arbgb = '00'
+            msgty = 'E'
+            msgv1 = |Plant { ls_plant_list-werks }:|
+            msgv2 = |Unauthorized for|
+            msgv3 = | status { p_status }->{ p_status - 1 }|
+            msgv4 = | Check with User: { lv_userid } |
+            txtnr = '001'.
+        DELETE lt_plant_list.
+
+      ENDIF.
+
+    ENDLOOP.
+*    BREAK 20002966.
+
+    LOOP AT s_werks ASSIGNING FIELD-SYMBOL(<ls_werks>).
+      IF <ls_werks>-sign = 'I' AND <ls_werks>-option = 'EQ' AND NOT line_exists( lt_plant_list[ table_line = <ls_werks>-low ] ).
+        DELETE s_werks.
+      ENDIF.
+    ENDLOOP.
+*    IF lt_plant_list IS INITIAL.
+*      CALL FUNCTION 'MESSAGES_SHOW'
+*        EXPORTING
+*          show_linno = space.
+*      STOP.
+*    ENDIF.
+
+    CALL FUNCTION 'MESSAGES_STOP'
+      EXCEPTIONS
+        e_message = 1.
+
+    IF sy-subrc <> 0 AND lt_plant_list IS INITIAL.
+      CALL FUNCTION 'MESSAGES_SHOW'
+        EXPORTING
+          show_linno = space.
+      STOP.
+    ELSE.
+      PERFORM get_data USING p_status p_stlal.
+      PERFORM fildcatlog.
+      PERFORM display_alv.
+
+    ENDIF.
+  ELSE.
+    MESSAGE 'All Fields are mandatory' TYPE 'E'.
+  ENDIF.
